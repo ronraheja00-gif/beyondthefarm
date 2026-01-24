@@ -14,16 +14,366 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_analysis: {
+        Row: {
+          analyzed_at: string
+          batch_id: string
+          confidence_level: string | null
+          created_at: string
+          degradation_point: string | null
+          environmental_impact: string | null
+          farmer_suggestions: string | null
+          full_analysis: Json | null
+          id: string
+          transporter_suggestions: string | null
+          vendor_suggestions: string | null
+        }
+        Insert: {
+          analyzed_at?: string
+          batch_id: string
+          confidence_level?: string | null
+          created_at?: string
+          degradation_point?: string | null
+          environmental_impact?: string | null
+          farmer_suggestions?: string | null
+          full_analysis?: Json | null
+          id?: string
+          transporter_suggestions?: string | null
+          vendor_suggestions?: string | null
+        }
+        Update: {
+          analyzed_at?: string
+          batch_id?: string
+          confidence_level?: string | null
+          created_at?: string
+          degradation_point?: string | null
+          environmental_impact?: string | null
+          farmer_suggestions?: string | null
+          full_analysis?: Json | null
+          id?: string
+          transporter_suggestions?: string | null
+          vendor_suggestions?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_analysis_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: true
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      batches: {
+        Row: {
+          created_at: string
+          crop_type: string
+          expected_quality: string
+          farm_address: string | null
+          farm_gps_lat: number | null
+          farm_gps_lng: number | null
+          farmer_id: string
+          harvest_time: string
+          id: string
+          notes: string | null
+          quantity_kg: number
+          status: Database["public"]["Enums"]["batch_status"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          crop_type: string
+          expected_quality: string
+          farm_address?: string | null
+          farm_gps_lat?: number | null
+          farm_gps_lng?: number | null
+          farmer_id: string
+          harvest_time: string
+          id?: string
+          notes?: string | null
+          quantity_kg: number
+          status?: Database["public"]["Enums"]["batch_status"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          crop_type?: string
+          expected_quality?: string
+          farm_address?: string | null
+          farm_gps_lat?: number | null
+          farm_gps_lng?: number | null
+          farmer_id?: string
+          harvest_time?: string
+          id?: string
+          notes?: string | null
+          quantity_kg?: number
+          status?: Database["public"]["Enums"]["batch_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      environmental_data: {
+        Row: {
+          air_quality_index: number | null
+          batch_id: string
+          created_at: string
+          gps_lat: number | null
+          gps_lng: number | null
+          humidity_percentage: number | null
+          id: string
+          precipitation_mm: number | null
+          raw_api_response: Json | null
+          recorded_at: string
+          stage: string
+          temperature_celsius: number | null
+          uv_index: number | null
+          weather_condition: string | null
+          wind_speed_kmh: number | null
+        }
+        Insert: {
+          air_quality_index?: number | null
+          batch_id: string
+          created_at?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          humidity_percentage?: number | null
+          id?: string
+          precipitation_mm?: number | null
+          raw_api_response?: Json | null
+          recorded_at?: string
+          stage: string
+          temperature_celsius?: number | null
+          uv_index?: number | null
+          weather_condition?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Update: {
+          air_quality_index?: number | null
+          batch_id?: string
+          created_at?: string
+          gps_lat?: number | null
+          gps_lng?: number | null
+          humidity_percentage?: number | null
+          id?: string
+          precipitation_mm?: number | null
+          raw_api_response?: Json | null
+          recorded_at?: string
+          stage?: string
+          temperature_celsius?: number | null
+          uv_index?: number | null
+          weather_condition?: string | null
+          wind_speed_kmh?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "environmental_data_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          phone?: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transport_logs: {
+        Row: {
+          batch_id: string
+          created_at: string
+          delay_reason: string | null
+          drop_gps_lat: number | null
+          drop_gps_lng: number | null
+          drop_time: string | null
+          id: string
+          notes: string | null
+          pickup_gps_lat: number | null
+          pickup_gps_lng: number | null
+          pickup_time: string | null
+          temperature_maintained: string | null
+          transport_type: string | null
+          transporter_id: string
+          updated_at: string
+          vehicle_info: string | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          delay_reason?: string | null
+          drop_gps_lat?: number | null
+          drop_gps_lng?: number | null
+          drop_time?: string | null
+          id?: string
+          notes?: string | null
+          pickup_gps_lat?: number | null
+          pickup_gps_lng?: number | null
+          pickup_time?: string | null
+          temperature_maintained?: string | null
+          transport_type?: string | null
+          transporter_id: string
+          updated_at?: string
+          vehicle_info?: string | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          delay_reason?: string | null
+          drop_gps_lat?: number | null
+          drop_gps_lng?: number | null
+          drop_time?: string | null
+          id?: string
+          notes?: string | null
+          pickup_gps_lat?: number | null
+          pickup_gps_lng?: number | null
+          pickup_time?: string | null
+          temperature_maintained?: string | null
+          transport_type?: string | null
+          transporter_id?: string
+          updated_at?: string
+          vehicle_info?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transport_logs_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vendor_receipts: {
+        Row: {
+          batch_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          quality_grade: string | null
+          receipt_gps_lat: number | null
+          receipt_gps_lng: number | null
+          received_at: string | null
+          received_quantity_kg: number | null
+          spoilage_percentage: number | null
+          updated_at: string
+          vendor_id: string
+          weight_loss_percentage: number | null
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quality_grade?: string | null
+          receipt_gps_lat?: number | null
+          receipt_gps_lng?: number | null
+          received_at?: string | null
+          received_quantity_kg?: number | null
+          spoilage_percentage?: number | null
+          updated_at?: string
+          vendor_id: string
+          weight_loss_percentage?: number | null
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quality_grade?: string | null
+          receipt_gps_lat?: number | null
+          receipt_gps_lng?: number | null
+          received_at?: string | null
+          received_quantity_kg?: number | null
+          spoilage_percentage?: number | null
+          updated_at?: string
+          vendor_id?: string
+          weight_loss_percentage?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vendor_receipts_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_user_role: {
+        Args: { _user_id: string }
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_batch_participant: {
+        Args: { _batch_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "farmer" | "transporter" | "vendor"
+      batch_status:
+        | "created"
+        | "assigned_transporter"
+        | "picked_up"
+        | "in_transit"
+        | "delivered"
+        | "received"
+        | "analyzed"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +500,17 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["farmer", "transporter", "vendor"],
+      batch_status: [
+        "created",
+        "assigned_transporter",
+        "picked_up",
+        "in_transit",
+        "delivered",
+        "received",
+        "analyzed",
+      ],
+    },
   },
 } as const

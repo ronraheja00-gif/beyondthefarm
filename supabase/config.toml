@@ -1,1 +1,7 @@
 project_id = "eidwgiydeedlfpceljkh"
+
+[functions.analyze-batch]
+verify_jwt = false
+
+[functions.fetch-environmental-data]
+verify_jwt = false
