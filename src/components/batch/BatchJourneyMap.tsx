@@ -161,9 +161,11 @@ export function BatchJourneyMap({ batch }: BatchJourneyMapProps) {
 
     mapInstanceRef.current = map;
 
-    // Add tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    // Add Google Maps tile layer
+    const googleApiKey = 'AIzaSyAhF_FSPZv_r4IfoyyyUTnTgaq-GTWt5Cs';
+    L.tileLayer(`https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}&key=${googleApiKey}`, {
+      attribution: '&copy; Google Maps',
+      maxZoom: 20,
     }).addTo(map);
 
     // Add markers
