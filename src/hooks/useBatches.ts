@@ -79,57 +79,24 @@ export function useBatches() {
   }, [fetchBatches]);
 
   const createBatch = async (batchData: Omit<Batch, 'id' | 'farmer_id' | 'status' | 'created_at' | 'updated_at'>) => {
-    const attemptInsert = async (farmerId: string) => {
-      return supabase
-        .from('batches')
-        .insert({
-          ...batchData,
-          farmer_id: farmerId,
-          status: 'created',
-        })
-        .select()
-        .single();
-    };
+    // Validate auth locally before calling backend.
+    await ensureAuthenticatedUserId();
 
-    // Use a backend-validated user id (not just local state) to avoid stale-session mismatches.
-    let farmerId = await ensureAuthenticatedUserId();
+    const response = await supabase.functions.invoke('create-batch', {
+      body: batchData,
+    });
 
-    let { data, error } = await attemptInsert(farmerId);
-
-    if (error) {
-      const message = String((error as any)?.message ?? '');
-      const code = String((error as any)?.code ?? '');
-      const isRls = code === '42501' || message.toLowerCase().includes('row level security');
-
-      // One retry after refreshing session (common fix when access token expired).
-      if (isRls) {
-        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-
-        if (!refreshError) {
-          farmerId = refreshData.session?.user?.id ?? (await ensureAuthenticatedUserId());
-          const retry = await attemptInsert(farmerId);
-          data = retry.data;
-          error = retry.error;
-        }
-      }
-    }
-
-    if (error) {
-      const message = String((error as any)?.message ?? '');
-      const code = String((error as any)?.code ?? '');
-      const isRls = code === '42501' || message.toLowerCase().includes('row level security');
-
-      if (isRls) {
-        // Force clean local sign-out so the user can re-auth and restore RLS access.
+    if (response.error) {
+      const status = (response.error as any)?.context?.status ?? (response.error as any)?.status;
+      if (status === 401) {
         await supabase.auth.signOut({ scope: 'local' });
         throw new Error('Session expired. Please sign in again and retry.');
       }
-
-      throw error;
+      throw new Error(response.error.message || 'Failed to create batch');
     }
 
     await fetchBatches();
-    return data;
+    return response.data;
   };
 
   const updateBatch = async (batchId: string, updates: Partial<Batch>) => {
