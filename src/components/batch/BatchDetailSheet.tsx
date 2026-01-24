@@ -14,6 +14,7 @@ import { BatchTimeline } from './BatchTimeline';
 import { AIAnalysisCard } from './AIAnalysisCard';
 import { TransportUpdateForm } from './TransportUpdateForm';
 import { VendorReceiptForm } from './VendorReceiptForm';
+import { BatchJourneyMap } from './BatchJourneyMap';
 import { useBatches } from '@/hooks/useBatches';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -28,6 +29,7 @@ import {
   Brain,
   Truck,
   Store,
+  Map,
 } from 'lucide-react';
 
 interface BatchDetailSheetProps {
@@ -269,6 +271,22 @@ export function BatchDetailSheet({ batch, open, onOpenChange, onRefresh }: Batch
                 </CardContent>
               </Card>
             )}
+
+            <Separator />
+
+            {/* Journey Map */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Map className="h-4 w-4" />
+                  Journey Map
+                </CardTitle>
+                <CardDescription>Visual route from farm to vendor</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <BatchJourneyMap batch={batch} />
+              </CardContent>
+            </Card>
 
             <Separator />
 
