@@ -1,4 +1,7 @@
 project_id = "eidwgiydeedlfpceljkh"
+[functions.calculate-route]
+verify_jwt = false
+
 
 [functions.analyze-batch]
 verify_jwt = false

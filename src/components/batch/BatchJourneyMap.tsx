@@ -1,8 +1,10 @@
-import { useMemo, useEffect, useRef } from 'react';
+import { useMemo, useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { BatchWithDetails } from '@/types/database';
 import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { MapPin, Clock, Loader2 } from 'lucide-react';
 
 // Fix for default markers not showing
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -49,10 +51,16 @@ interface BatchJourneyMapProps {
   batch: BatchWithDetails;
 }
 
+interface RouteInfo {
+  distanceKm: number;
+  durationText: string;
+}
+
 export function BatchJourneyMap({ batch }: BatchJourneyMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
   const mapPoints = useMemo(() => {
     const points: MapPoint[] = [];
 
@@ -145,6 +153,44 @@ export function BatchJourneyMap({ batch }: BatchJourneyMapProps) {
     return { center: [centerLat, centerLng] as [number, number], zoom: calculatedZoom };
   }, [mapPoints]);
 
+  // Fetch route info when we have origin and destination
+  useEffect(() => {
+    const fetchRouteInfo = async () => {
+      // Need at least farm and one delivery point for route calculation
+      const origin = batch.farm_gps_lat && batch.farm_gps_lng 
+        ? { lat: batch.farm_gps_lat, lng: batch.farm_gps_lng }
+        : null;
+      
+      const destination = batch.vendor_receipt?.receipt_gps_lat && batch.vendor_receipt?.receipt_gps_lng
+        ? { lat: batch.vendor_receipt.receipt_gps_lat, lng: batch.vendor_receipt.receipt_gps_lng }
+        : batch.transport_log?.drop_gps_lat && batch.transport_log?.drop_gps_lng
+          ? { lat: batch.transport_log.drop_gps_lat, lng: batch.transport_log.drop_gps_lng }
+          : null;
+
+      if (!origin || !destination) return;
+
+      setRouteLoading(true);
+      try {
+        const { data, error } = await supabase.functions.invoke('calculate-route', {
+          body: { origin, destination }
+        });
+
+        if (error) throw error;
+        
+        setRouteInfo({
+          distanceKm: data.distanceKm,
+          durationText: data.durationText
+        });
+      } catch (err) {
+        console.error('Error fetching route info:', err);
+      } finally {
+        setRouteLoading(false);
+      }
+    };
+
+    fetchRouteInfo();
+  }, [batch]);
+
   useEffect(() => {
     if (!mapRef.current || mapPoints.length === 0) return;
 
@@ -217,6 +263,29 @@ export function BatchJourneyMap({ batch }: BatchJourneyMapProps) {
 
   return (
     <div className="space-y-2">
+      {/* Route Info Display */}
+      {(routeInfo || routeLoading) && (
+        <div className="flex items-center gap-4 p-3 rounded-lg bg-muted/50 border">
+          {routeLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span>Calculating route...</span>
+            </div>
+          ) : routeInfo && (
+            <>
+              <div className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">{routeInfo.distanceKm} km</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Clock className="h-4 w-4 text-primary" />
+                <span className="text-sm font-medium">{routeInfo.durationText}</span>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
         <div className="flex items-center gap-1">
           <span className="inline-block w-3 h-3 rounded-full bg-farmer" />
