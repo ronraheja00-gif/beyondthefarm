@@ -9,6 +9,20 @@ export function useBatches() {
   const [batches, setBatches] = useState<BatchWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const ensureAuthenticatedUserId = useCallback(async () => {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error || !data.user?.id) {
+      // If the client has a stale/invalid token, requests silently become unauthenticated,
+      // which surfaces as RLS errors. Force a clean local sign-out.
+      console.warn('Auth user validation failed before batch operation; signing out locally.', error);
+      await supabase.auth.signOut({ scope: 'local' });
+      throw new Error('Session expired. Please sign in again and retry.');
+    }
+
+    return data.user.id;
+  }, []);
+
   const fetchBatches = useCallback(async () => {
     if (!profile || !session) return;
 
@@ -65,21 +79,54 @@ export function useBatches() {
   }, [fetchBatches]);
 
   const createBatch = async (batchData: Omit<Batch, 'id' | 'farmer_id' | 'status' | 'created_at' | 'updated_at'>) => {
-    if (!session?.user?.id) {
-      throw new Error('Not authenticated');
+    const attemptInsert = async (farmerId: string) => {
+      return supabase
+        .from('batches')
+        .insert({
+          ...batchData,
+          farmer_id: farmerId,
+          status: 'created',
+        })
+        .select()
+        .single();
+    };
+
+    // Use a backend-validated user id (not just local state) to avoid stale-session mismatches.
+    let farmerId = await ensureAuthenticatedUserId();
+
+    let { data, error } = await attemptInsert(farmerId);
+
+    if (error) {
+      const message = String((error as any)?.message ?? '');
+      const code = String((error as any)?.code ?? '');
+      const isRls = code === '42501' || message.toLowerCase().includes('row level security');
+
+      // One retry after refreshing session (common fix when access token expired).
+      if (isRls) {
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+
+        if (!refreshError) {
+          farmerId = refreshData.session?.user?.id ?? (await ensureAuthenticatedUserId());
+          const retry = await attemptInsert(farmerId);
+          data = retry.data;
+          error = retry.error;
+        }
+      }
     }
 
-    const { data, error } = await supabase
-      .from('batches')
-      .insert({
-        ...batchData,
-        farmer_id: session.user.id,
-        status: 'created',
-      })
-      .select()
-      .single();
+    if (error) {
+      const message = String((error as any)?.message ?? '');
+      const code = String((error as any)?.code ?? '');
+      const isRls = code === '42501' || message.toLowerCase().includes('row level security');
 
-    if (error) throw error;
+      if (isRls) {
+        // Force clean local sign-out so the user can re-auth and restore RLS access.
+        await supabase.auth.signOut({ scope: 'local' });
+        throw new Error('Session expired. Please sign in again and retry.');
+      }
+
+      throw error;
+    }
 
     await fetchBatches();
     return data;
