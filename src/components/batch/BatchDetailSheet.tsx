@@ -15,6 +15,7 @@ import { AIAnalysisCard } from './AIAnalysisCard';
 import { TransportUpdateForm } from './TransportUpdateForm';
 import { VendorReceiptForm } from './VendorReceiptForm';
 import { BatchJourneyMap } from './BatchJourneyMap';
+import { WeatherSector } from './WeatherSector';
 import { useBatches } from '@/hooks/useBatches';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
@@ -30,6 +31,7 @@ import {
   Truck,
   Store,
   Map,
+  CloudSun,
 } from 'lucide-react';
 
 interface BatchDetailSheetProps {
@@ -285,6 +287,22 @@ export function BatchDetailSheet({ batch, open, onOpenChange, onRefresh }: Batch
               </CardHeader>
               <CardContent>
                 <BatchJourneyMap batch={batch} />
+              </CardContent>
+            </Card>
+
+            <Separator />
+
+            {/* Weather Sector */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <CloudSun className="h-4 w-4" />
+                  Weather Conditions
+                </CardTitle>
+                <CardDescription>Environmental data captured at each stage</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <WeatherSector environmentalData={batch.environmental_data} />
               </CardContent>
             </Card>
 
