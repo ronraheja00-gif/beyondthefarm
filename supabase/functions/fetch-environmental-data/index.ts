@@ -6,6 +6,16 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface WeatherData {
+  temperature_celsius: number;
+  humidity_percentage: number;
+  weather_condition: string;
+  air_quality_index: number | null;
+  uv_index: number;
+  precipitation_mm: number;
+  wind_speed_kmh: number;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -44,108 +54,82 @@ serve(async (req) => {
       );
     }
 
-    // Fetch environmental data using Gemini with grounding (real-time data access)
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY is not configured");
+    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+    if (!GOOGLE_API_KEY) {
+      throw new Error("GOOGLE_API_KEY is not configured");
     }
 
-    const prompt = `Get the current weather and environmental conditions for the location at coordinates: 
-    Latitude: ${latitude}, Longitude: ${longitude}
-    
-    Please provide the following information in JSON format:
-    {
-      "temperature_celsius": number (current temperature in Celsius),
-      "humidity_percentage": number (current humidity percentage),
-      "weather_condition": string (e.g., "Sunny", "Cloudy", "Rainy", "Stormy"),
-      "air_quality_index": number (AQI if available, otherwise estimate based on location),
-      "uv_index": number (current UV index),
-      "precipitation_mm": number (recent precipitation in mm),
-      "wind_speed_kmh": number (wind speed in km/h)
-    }
-    
-    Use real-time weather data for this location.`;
-
-    const aiResponse = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    // Fetch current weather conditions from Google Weather API
+    const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_API_KEY}`;
+    const weatherResponse = await fetch(weatherUrl, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
-        messages: [
-          {
-            role: "system",
-            content: `You are an environmental data assistant. Provide accurate weather and environmental data for the given coordinates. 
-            Always respond with valid JSON matching the requested format. Use your knowledge of typical weather patterns and real-time grounding to provide accurate data.`,
-          },
-          {
-            role: "user",
-            content: prompt,
-          },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "get_environmental_data",
-              description: "Get environmental data for a location",
-              parameters: {
-                type: "object",
-                properties: {
-                  temperature_celsius: { type: "number" },
-                  humidity_percentage: { type: "number" },
-                  weather_condition: { type: "string" },
-                  air_quality_index: { type: "number" },
-                  uv_index: { type: "number" },
-                  precipitation_mm: { type: "number" },
-                  wind_speed_kmh: { type: "number" },
-                },
-                required: [
-                  "temperature_celsius",
-                  "humidity_percentage",
-                  "weather_condition",
-                  "air_quality_index",
-                  "uv_index",
-                  "precipitation_mm",
-                  "wind_speed_kmh",
-                ],
-                additionalProperties: false,
-              },
-            },
-          },
-        ],
-        tool_choice: { type: "function", function: { name: "get_environmental_data" } },
+        location: {
+          latitude: latitude,
+          longitude: longitude,
+        },
       }),
     });
 
-    if (!aiResponse.ok) {
-      if (aiResponse.status === 429) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded, please try again later." }), {
-          status: 429,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      if (aiResponse.status === 402) {
-        return new Response(JSON.stringify({ error: "Payment required, please add credits." }), {
-          status: 402,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-      const errorText = await aiResponse.text();
-      console.error("AI gateway error:", aiResponse.status, errorText);
-      throw new Error("Failed to fetch environmental data");
-    }
+    let envData: WeatherData;
 
-    const aiResult = await aiResponse.json();
-    const toolCall = aiResult.choices?.[0]?.message?.tool_calls?.[0];
+    if (weatherResponse.ok) {
+      const weatherResult = await weatherResponse.json();
+      console.log("Google Weather API response:", JSON.stringify(weatherResult));
 
-    let envData;
-    if (toolCall?.function?.arguments) {
-      envData = JSON.parse(toolCall.function.arguments);
+      // Extract data from Google Weather API response
+      envData = {
+        temperature_celsius: weatherResult.temperature?.degrees ?? 25,
+        humidity_percentage: weatherResult.relativeHumidity ?? 60,
+        weather_condition: weatherResult.weatherCondition?.description?.text || 
+                          weatherResult.weatherCondition?.type?.replace(/_/g, " ") || 
+                          "Unknown",
+        air_quality_index: null, // Will fetch separately from Air Quality API
+        uv_index: weatherResult.uvIndex ?? 5,
+        precipitation_mm: weatherResult.precipitation?.qpf?.millimeters ?? 0,
+        wind_speed_kmh: weatherResult.wind?.speed?.value 
+          ? (weatherResult.wind.speed.unit === "KILOMETERS_PER_HOUR" 
+              ? weatherResult.wind.speed.value 
+              : weatherResult.wind.speed.value * 3.6) // Convert m/s to km/h if needed
+          : 10,
+      };
+
+      // Fetch Air Quality data from Google Air Quality API
+      try {
+        const aqiUrl = `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_API_KEY}`;
+        const aqiResponse = await fetch(aqiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            location: {
+              latitude: latitude,
+              longitude: longitude,
+            },
+          }),
+        });
+
+        if (aqiResponse.ok) {
+          const aqiResult = await aqiResponse.json();
+          console.log("Google Air Quality API response:", JSON.stringify(aqiResult));
+          
+          // Get the universal AQI or first available index
+          const aqiIndex = aqiResult.indexes?.find((idx: any) => idx.code === "uaqi") 
+                          || aqiResult.indexes?.[0];
+          if (aqiIndex?.aqi) {
+            envData.air_quality_index = aqiIndex.aqi;
+          }
+        } else {
+          console.warn("Air Quality API error:", await aqiResponse.text());
+        }
+      } catch (aqiError) {
+        console.warn("Failed to fetch air quality data:", aqiError);
+      }
     } else {
-      // Fallback with estimated data
+      const errorText = await weatherResponse.text();
+      console.error("Google Weather API error:", weatherResponse.status, errorText);
+      
+      // Fallback to estimated data if API fails
       envData = {
         temperature_celsius: 25,
         humidity_percentage: 60,
