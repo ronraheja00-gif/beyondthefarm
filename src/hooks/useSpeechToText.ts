@@ -52,26 +52,38 @@ interface UseSpeechToTextReturn {
 }
 
 export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeechToTextReturn {
-  const { onResult, onError, continuous = false, language = 'en-US' } = options;
+  const { continuous = false, language = 'en-US' } = options;
   
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
   
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const onResultRef = useRef(options.onResult);
+  const onErrorRef = useRef(options.onError);
+  
+  // Keep refs updated with latest callbacks
+  useEffect(() => {
+    onResultRef.current = options.onResult;
+  }, [options.onResult]);
+  
+  useEffect(() => {
+    onErrorRef.current = options.onError;
+  }, [options.onError]);
   
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
+  // Initialize recognition only once
   useEffect(() => {
     if (!isSupported) return;
 
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SpeechRecognitionClass) return;
     
-    recognitionRef.current = new SpeechRecognitionClass();
+    const recognition = new SpeechRecognitionClass();
+    recognitionRef.current = recognition;
     
-    const recognition = recognitionRef.current;
     recognition.continuous = continuous;
     recognition.interimResults = true;
     recognition.lang = language;
@@ -93,7 +105,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
       
       if (finalTranscript) {
         setTranscript(finalTranscript);
-        onResult?.(finalTranscript);
+        onResultRef.current?.(finalTranscript);
       }
     };
 
@@ -101,7 +113,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
       const errorMessage = getErrorMessage(event.error);
       setError(errorMessage);
       setIsListening(false);
-      onError?.(errorMessage);
+      onErrorRef.current?.(errorMessage);
     };
 
     recognition.onend = () => {
@@ -111,7 +123,7 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
     return () => {
       recognition.abort();
     };
-  }, [isSupported, continuous, language, onResult, onError]);
+  }, [isSupported, continuous, language]);
 
   const startListening = useCallback(() => {
     if (!recognitionRef.current || !isSupported) return;
