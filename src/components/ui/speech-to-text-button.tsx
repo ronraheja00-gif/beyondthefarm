@@ -20,14 +20,14 @@ export function SpeechToTextButton({
   appendMode = true,
   currentValue = '',
 }: SpeechToTextButtonProps) {
-  // Store currentValue in a ref to avoid recreating the callback
+  // Store values in refs to avoid recreating the callback
   const currentValueRef = useRef(currentValue);
-  currentValueRef.current = currentValue;
-  
   const onTranscriptRef = useRef(onTranscript);
-  onTranscriptRef.current = onTranscript;
-  
   const appendModeRef = useRef(appendMode);
+  
+  // Update refs synchronously
+  currentValueRef.current = currentValue;
+  onTranscriptRef.current = onTranscript;
   appendModeRef.current = appendMode;
 
   const handleResult = useCallback((transcript: string) => {
@@ -43,17 +43,18 @@ export function SpeechToTextButton({
     onResult: handleResult,
   });
 
-  if (!isSupported) {
-    return null;
-  }
-
-  const handleClick = () => {
+  const handleClick = useCallback(() => {
     if (isListening) {
       stopListening();
     } else {
       startListening();
     }
-  };
+  }, [isListening, startListening, stopListening]);
+
+  // Return null after all hooks are called
+  if (!isSupported) {
+    return null;
+  }
 
   return (
     <TooltipProvider>
