@@ -17,6 +17,90 @@ type CreateBatchPayload = {
   notes?: string | null;
 };
 
+interface WeatherData {
+  temperature_celsius: number;
+  humidity_percentage: number;
+  weather_condition: string;
+  air_quality_index: number | null;
+  uv_index: number;
+  precipitation_mm: number;
+  wind_speed_kmh: number;
+}
+
+async function fetchWeatherData(latitude: number, longitude: number): Promise<WeatherData | null> {
+  const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
+  if (!GOOGLE_API_KEY) {
+    console.warn("GOOGLE_API_KEY not configured, skipping weather fetch");
+    return null;
+  }
+
+  try {
+    // Fetch current weather conditions from Google Weather API
+    const weatherUrl = `https://weather.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_API_KEY}`;
+    const weatherResponse = await fetch(weatherUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        location: { latitude, longitude },
+      }),
+    });
+
+    let envData: WeatherData;
+
+    if (weatherResponse.ok) {
+      const weatherResult = await weatherResponse.json();
+      console.log("Google Weather API response:", JSON.stringify(weatherResult));
+
+      envData = {
+        temperature_celsius: weatherResult.temperature?.degrees ?? 25,
+        humidity_percentage: weatherResult.relativeHumidity ?? 60,
+        weather_condition: weatherResult.weatherCondition?.description?.text || 
+                          weatherResult.weatherCondition?.type?.replace(/_/g, " ") || 
+                          "Unknown",
+        air_quality_index: null,
+        uv_index: weatherResult.uvIndex ?? 5,
+        precipitation_mm: weatherResult.precipitation?.qpf?.millimeters ?? 0,
+        wind_speed_kmh: weatherResult.wind?.speed?.value 
+          ? (weatherResult.wind.speed.unit === "KILOMETERS_PER_HOUR" 
+              ? weatherResult.wind.speed.value 
+              : weatherResult.wind.speed.value * 3.6)
+          : 10,
+      };
+
+      // Fetch Air Quality data
+      try {
+        const aqiUrl = `https://airquality.googleapis.com/v1/currentConditions:lookup?key=${GOOGLE_API_KEY}`;
+        const aqiResponse = await fetch(aqiUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            location: { latitude, longitude },
+          }),
+        });
+
+        if (aqiResponse.ok) {
+          const aqiResult = await aqiResponse.json();
+          const aqiIndex = aqiResult.indexes?.find((idx: any) => idx.code === "uaqi") 
+                          || aqiResult.indexes?.[0];
+          if (aqiIndex?.aqi) {
+            envData.air_quality_index = aqiIndex.aqi;
+          }
+        }
+      } catch (aqiError) {
+        console.warn("Failed to fetch air quality data:", aqiError);
+      }
+
+      return envData;
+    } else {
+      console.error("Google Weather API error:", weatherResponse.status, await weatherResponse.text());
+      return null;
+    }
+  } catch (error) {
+    console.error("Weather fetch error:", error);
+    return null;
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -108,7 +192,40 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify(created), {
+    // Automatically fetch and store weather data at harvest location
+    let weatherData: WeatherData | null = null;
+    if (body.farm_gps_lat && body.farm_gps_lng) {
+      weatherData = await fetchWeatherData(body.farm_gps_lat, body.farm_gps_lng);
+      
+      if (weatherData) {
+        const { error: envError } = await admin
+          .from("environmental_data")
+          .insert({
+            batch_id: created.id,
+            stage: "harvest",
+            gps_lat: body.farm_gps_lat,
+            gps_lng: body.farm_gps_lng,
+            temperature_celsius: weatherData.temperature_celsius,
+            humidity_percentage: weatherData.humidity_percentage,
+            weather_condition: weatherData.weather_condition,
+            air_quality_index: weatherData.air_quality_index,
+            uv_index: weatherData.uv_index,
+            precipitation_mm: weatherData.precipitation_mm,
+            wind_speed_kmh: weatherData.wind_speed_kmh,
+            raw_api_response: weatherData,
+            recorded_at: new Date().toISOString(),
+          });
+
+        if (envError) {
+          console.error("Failed to save environmental data:", envError);
+          // Don't fail batch creation for this
+        } else {
+          console.log("Environmental data saved for batch:", created.id);
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ ...created, weather: weatherData }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {

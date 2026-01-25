@@ -80,7 +80,7 @@ export function CreateBatchForm({ onSuccess }: CreateBatchFormProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { latitude, longitude, error: geoError, loading: geoLoading, getLocation } = useGeolocation();
-  const { createBatch, fetchEnvironmentalData } = useBatches();
+  const { createBatch } = useBatches();
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
@@ -103,7 +103,7 @@ export function CreateBatchForm({ onSuccess }: CreateBatchFormProps) {
   const onSubmit = async (data: FormData) => {
     setLoading(true);
     try {
-      const batch = await createBatch({
+      const result = await createBatch({
         crop_type: data.crop_type,
         harvest_time: new Date(data.harvest_time).toISOString(),
         expected_quality: data.expected_quality,
@@ -114,19 +114,14 @@ export function CreateBatchForm({ onSuccess }: CreateBatchFormProps) {
         notes: data.notes || null,
       });
 
-      // Fetch environmental data for harvest stage
-      if (latitude && longitude && batch) {
-        try {
-          await fetchEnvironmentalData(batch.id, 'harvest', latitude, longitude);
-        } catch (envError) {
-          console.error('Failed to fetch environmental data:', envError);
-          // Don't fail the batch creation for this
-        }
-      }
+      // Weather data is now automatically captured server-side
+      const weatherInfo = result?.weather 
+        ? ` Weather: ${result.weather.temperature_celsius}°C, ${result.weather.humidity_percentage}% humidity.`
+        : '';
 
       toast({
         title: 'Batch Created!',
-        description: `Your ${data.crop_type} batch has been registered successfully.`,
+        description: `Your ${data.crop_type} batch has been registered successfully.${weatherInfo}`,
       });
 
       form.reset();
