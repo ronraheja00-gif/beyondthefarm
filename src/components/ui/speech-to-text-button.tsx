@@ -1,4 +1,5 @@
-import { Mic, MicOff, Loader2 } from 'lucide-react';
+import { useRef, useCallback } from 'react';
+import { Mic, MicOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useSpeechToText } from '@/hooks/useSpeechToText';
@@ -19,15 +20,27 @@ export function SpeechToTextButton({
   appendMode = true,
   currentValue = '',
 }: SpeechToTextButtonProps) {
+  // Store currentValue in a ref to avoid recreating the callback
+  const currentValueRef = useRef(currentValue);
+  currentValueRef.current = currentValue;
+  
+  const onTranscriptRef = useRef(onTranscript);
+  onTranscriptRef.current = onTranscript;
+  
+  const appendModeRef = useRef(appendMode);
+  appendModeRef.current = appendMode;
+
+  const handleResult = useCallback((transcript: string) => {
+    if (appendModeRef.current && currentValueRef.current) {
+      const separator = currentValueRef.current.endsWith(' ') || currentValueRef.current.endsWith('\n') ? '' : ' ';
+      onTranscriptRef.current(currentValueRef.current + separator + transcript);
+    } else {
+      onTranscriptRef.current(transcript);
+    }
+  }, []);
+
   const { isListening, isSupported, startListening, stopListening, error } = useSpeechToText({
-    onResult: (transcript) => {
-      if (appendMode && currentValue) {
-        const separator = currentValue.endsWith(' ') || currentValue.endsWith('\n') ? '' : ' ';
-        onTranscript(currentValue + separator + transcript);
-      } else {
-        onTranscript(transcript);
-      }
-    },
+    onResult: handleResult,
   });
 
   if (!isSupported) {
