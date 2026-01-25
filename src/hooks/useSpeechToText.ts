@@ -63,26 +63,19 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
   const onErrorRef = useRef(options.onError);
   
   // Keep refs updated with latest callbacks
-  useEffect(() => {
-    onResultRef.current = options.onResult;
-  }, [options.onResult]);
-  
-  useEffect(() => {
-    onErrorRef.current = options.onError;
-  }, [options.onError]);
+  onResultRef.current = options.onResult;
+  onErrorRef.current = options.onError;
   
   const isSupported = typeof window !== 'undefined' && 
     ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
 
-  // Initialize recognition only once
-  useEffect(() => {
-    if (!isSupported) return;
+  const createRecognition = useCallback(() => {
+    if (!isSupported) return null;
 
     const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognitionClass) return;
+    if (!SpeechRecognitionClass) return null;
     
     const recognition = new SpeechRecognitionClass();
-    recognitionRef.current = recognition;
     
     recognition.continuous = continuous;
     recognition.interimResults = true;
@@ -120,24 +113,41 @@ export function useSpeechToText(options: UseSpeechToTextOptions = {}): UseSpeech
       setIsListening(false);
     };
 
-    return () => {
-      recognition.abort();
-    };
+    return recognition;
   }, [isSupported, continuous, language]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.abort();
+      }
+    };
+  }, []);
+
   const startListening = useCallback(() => {
-    if (!recognitionRef.current || !isSupported) return;
+    if (!isSupported) return;
+    
+    // Stop any existing recognition
+    if (recognitionRef.current) {
+      recognitionRef.current.abort();
+    }
     
     setError(null);
     setTranscript('');
     
+    // Create a new recognition instance
+    const recognition = createRecognition();
+    if (!recognition) return;
+    
+    recognitionRef.current = recognition;
+    
     try {
-      recognitionRef.current.start();
+      recognition.start();
     } catch (e) {
-      // Recognition might already be running
       console.error('Speech recognition start error:', e);
     }
-  }, [isSupported]);
+  }, [isSupported, createRecognition]);
 
   const stopListening = useCallback(() => {
     if (!recognitionRef.current) return;
