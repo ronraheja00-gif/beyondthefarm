@@ -21,7 +21,8 @@ import {
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useBatches } from '@/hooks/useBatches';
 import { toast } from '@/hooks/use-toast';
-import { Loader2, MapPin, Truck, Package, Clock } from 'lucide-react';
+import { SpeechToTextButton } from '@/components/ui/speech-to-text-button';
+import { Loader2, MapPin, Package } from 'lucide-react';
 
 const transportTypes = [
   'Refrigerated Truck',
@@ -181,11 +182,18 @@ export function TransportUpdateForm({ batch, open, onOpenChange, onSuccess }: Tr
 
               <div className="space-y-2">
                 <Label>Vehicle Info (Optional)</Label>
-                <Input
-                  placeholder="e.g., License plate, model"
-                  value={formData.vehicle_info}
-                  onChange={(e) => setFormData((prev) => ({ ...prev, vehicle_info: e.target.value }))}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g., License plate, model"
+                    value={formData.vehicle_info}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, vehicle_info: e.target.value }))}
+                  />
+                  <SpeechToTextButton
+                    onTranscript={(text) => setFormData((prev) => ({ ...prev, vehicle_info: text }))}
+                    currentValue={formData.vehicle_info}
+                    appendMode={true}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
@@ -212,11 +220,18 @@ export function TransportUpdateForm({ batch, open, onOpenChange, onSuccess }: Tr
           {action === 'deliver' && (
             <div className="space-y-2">
               <Label>Delay Reason (if any)</Label>
-              <Textarea
-                placeholder="e.g., Traffic, weather conditions, vehicle breakdown..."
-                value={formData.delay_reason}
-                onChange={(e) => setFormData((prev) => ({ ...prev, delay_reason: e.target.value }))}
-              />
+              <div className="flex gap-2 items-start">
+                <Textarea
+                  placeholder="e.g., Traffic, weather conditions, vehicle breakdown..."
+                  value={formData.delay_reason}
+                  onChange={(e) => setFormData((prev) => ({ ...prev, delay_reason: e.target.value }))}
+                />
+                <SpeechToTextButton
+                  onTranscript={(text) => setFormData((prev) => ({ ...prev, delay_reason: text }))}
+                  currentValue={formData.delay_reason}
+                  appendMode={true}
+                />
+              </div>
             </div>
           )}
 
@@ -242,11 +257,18 @@ export function TransportUpdateForm({ batch, open, onOpenChange, onSuccess }: Tr
 
           <div className="space-y-2">
             <Label>Notes (Optional)</Label>
-            <Textarea
-              placeholder="Any additional notes..."
-              value={formData.notes}
-              onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-            />
+            <div className="flex gap-2 items-start">
+              <Textarea
+                placeholder="Any additional notes..."
+                value={formData.notes}
+                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+              />
+              <SpeechToTextButton
+                onTranscript={(text) => setFormData((prev) => ({ ...prev, notes: text }))}
+                currentValue={formData.notes}
+                appendMode={true}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">

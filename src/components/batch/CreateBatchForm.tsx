@@ -32,6 +32,7 @@ import {
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useBatches } from '@/hooks/useBatches';
 import { toast } from '@/hooks/use-toast';
+import { SpeechToTextButton } from '@/components/ui/speech-to-text-button';
 import { Loader2, MapPin, Plus, Sprout } from 'lucide-react';
 
 const cropTypes = [
@@ -265,9 +266,16 @@ export function CreateBatchForm({ onSuccess }: CreateBatchFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Farm Address (Optional)</FormLabel>
-                  <FormControl>
-                    <Input placeholder="e.g., Green Valley Farm, District 5" {...field} />
-                  </FormControl>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input placeholder="e.g., Green Valley Farm, District 5" {...field} />
+                    </FormControl>
+                    <SpeechToTextButton
+                      onTranscript={(text) => field.onChange(text)}
+                      currentValue={field.value}
+                      appendMode={true}
+                    />
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
@@ -279,13 +287,20 @@ export function CreateBatchForm({ onSuccess }: CreateBatchFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Notes (Optional)</FormLabel>
-                  <FormControl>
-                    <Textarea
-                      placeholder="Any additional information about this batch..."
-                      className="resize-none"
-                      {...field}
+                  <div className="flex gap-2 items-start">
+                    <FormControl>
+                      <Textarea
+                        placeholder="Any additional information about this batch..."
+                        className="resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <SpeechToTextButton
+                      onTranscript={(text) => field.onChange(text)}
+                      currentValue={field.value}
+                      appendMode={true}
                     />
-                  </FormControl>
+                  </div>
                   <FormMessage />
                 </FormItem>
               )}
