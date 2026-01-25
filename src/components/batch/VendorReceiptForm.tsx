@@ -21,6 +21,7 @@ import {
 import { useGeolocation } from '@/hooks/useGeolocation';
 import { useBatches } from '@/hooks/useBatches';
 import { toast } from '@/hooks/use-toast';
+import { SpeechToTextButton } from '@/components/ui/speech-to-text-button';
 import { Loader2, MapPin, Store, CheckCircle } from 'lucide-react';
 
 const qualityGrades = [
@@ -226,11 +227,18 @@ export function VendorReceiptForm({ batch, open, onOpenChange, onSuccess }: Vend
 
           <div className="space-y-2">
             <Label>Notes (Optional)</Label>
-            <Textarea
-              placeholder="Any observations about the crop condition..."
-              value={formData.notes}
-              onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-            />
+            <div className="flex gap-2 items-start">
+              <Textarea
+                placeholder="Any observations about the crop condition..."
+                value={formData.notes}
+                onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
+              />
+              <SpeechToTextButton
+                onTranscript={(text) => setFormData((prev) => ({ ...prev, notes: text }))}
+                currentValue={formData.notes}
+                appendMode={true}
+              />
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-4">
