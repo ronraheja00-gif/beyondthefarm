@@ -214,6 +214,10 @@ export function WeatherSector({ environmentalData, stage }: WeatherSectorProps) 
       {filteredData.map((data) => (
         <WeatherCard key={data.id} data={data} />
       ))}
+      <p className="text-xs text-muted-foreground text-center flex items-center justify-center gap-1.5 pt-2">
+        <Cloud className="h-3 w-3" />
+        Powered by Google Weather & Air Quality APIs
+      </p>
     </div>
   );
 }
