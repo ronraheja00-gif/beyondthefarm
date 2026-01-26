@@ -36,7 +36,7 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
               <Brain className="h-5 w-5 text-primary" />
             </div>
             <div>
-              <CardTitle className="text-lg">AI Quality Analysis</CardTitle>
+              <CardTitle className="text-lg">AI Advisor</CardTitle>
               <CardDescription>Powered by Gemini AI</CardDescription>
             </div>
           </div>
