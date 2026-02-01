@@ -1,4 +1,3 @@
-import { Suspense, lazy } from 'react';
 import { AIAnalysis } from '@/types/database';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -15,7 +14,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const Spline = lazy(() => import('@splinetool/react-spline'));
+const SPLINE_EMBED_URL =
+  'https://my.spline.design/nexbotbyaximoriscopycopy-UM9H9JTgyCAde3Y2lbv8De3h/';
 
 interface AIAnalysisCardProps {
   analysis: AIAnalysis;
@@ -32,11 +32,17 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
 
   return (
     <Card className="overflow-hidden relative">
-      {/* Spline 3D Background */}
-      <div className="absolute inset-0 z-0 opacity-30">
-        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-primary/5 to-accent/10" />}>
-          <Spline scene="https://prod.spline.design/nexbotbyaximoriscopycopy-UM9H9JTgyCAde3Y2lbv8De3h/scene.splinecode" />
-        </Suspense>
+      {/* Spline 3D Background (iframe embed to avoid dynamic-import chunk failures) */}
+      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/10" />
+        <iframe
+          title="AI Advisor 3D background"
+          src={SPLINE_EMBED_URL}
+          className="absolute inset-0 h-full w-full"
+          allow="autoplay; fullscreen"
+          loading="lazy"
+          referrerPolicy="no-referrer-when-downgrade"
+        />
       </div>
       
       <CardHeader className="relative z-10 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-sm pb-4">
