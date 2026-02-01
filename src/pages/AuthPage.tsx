@@ -16,6 +16,12 @@ export function AuthPage() {
           title="Beyond the Farm 3D Background"
           src={SPLINE_EMBED_URL}
           className="h-full w-full border-0"
+          style={{
+            transform: 'translateZ(0)',
+            backfaceVisibility: 'hidden',
+            willChange: 'transform',
+            WebkitFontSmoothing: 'antialiased',
+          }}
           allow="autoplay; fullscreen"
           loading="eager"
           referrerPolicy="no-referrer-when-downgrade"
