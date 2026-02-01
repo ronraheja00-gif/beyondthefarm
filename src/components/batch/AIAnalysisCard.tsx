@@ -1,3 +1,4 @@
+import { Suspense, lazy } from 'react';
 import { AIAnalysis } from '@/types/database';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +15,8 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const Spline = lazy(() => import('@splinetool/react-spline'));
+
 interface AIAnalysisCardProps {
   analysis: AIAnalysis;
 }
@@ -28,11 +31,18 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary/10 to-accent/10 pb-4">
+    <Card className="overflow-hidden relative">
+      {/* Spline 3D Background */}
+      <div className="absolute inset-0 z-0 opacity-30">
+        <Suspense fallback={<div className="w-full h-full bg-gradient-to-br from-primary/5 to-accent/10" />}>
+          <Spline scene="https://prod.spline.design/nexbotbyaximoriscopycopy-UM9H9JTgyCAde3Y2lbv8De3h/scene.splinecode" />
+        </Suspense>
+      </div>
+      
+      <CardHeader className="relative z-10 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-sm pb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/30 backdrop-blur-sm">
               <Brain className="h-5 w-5 text-primary" />
             </div>
             <div>
@@ -48,7 +58,7 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
           )}
         </div>
       </CardHeader>
-      <CardContent className="pt-6 space-y-6">
+      <CardContent className="relative z-10 pt-6 space-y-6 backdrop-blur-sm bg-card/80">
         {/* Degradation Point */}
         {analysis.degradation_point && (
           <div className="space-y-2">
