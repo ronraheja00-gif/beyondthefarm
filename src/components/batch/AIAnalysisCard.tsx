@@ -31,40 +31,40 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
   };
 
   return (
-    <Card className="overflow-hidden relative">
-      {/* Spline 3D Background (iframe embed to avoid dynamic-import chunk failures) */}
-      <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-accent/10" />
+    <Card className="overflow-hidden relative min-h-[400px]">
+      {/* Spline 3D - positioned right, interactive, more visible */}
+      <div className="absolute top-0 right-0 bottom-0 w-1/2 sm:w-2/5 z-20">
         <iframe
-          title="AI Advisor 3D background"
+          title="AI Advisor 3D"
           src={SPLINE_EMBED_URL}
-          className="absolute inset-0 h-full w-full"
+          className="h-full w-full border-0"
           allow="autoplay; fullscreen"
           loading="lazy"
           referrerPolicy="no-referrer-when-downgrade"
         />
       </div>
-      
-      <CardHeader className="relative z-10 bg-gradient-to-r from-primary/20 to-accent/20 backdrop-blur-sm pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/30 backdrop-blur-sm">
+
+      {/* Content area with gradient fade into the 3D */}
+      <div className="relative z-10 w-full sm:w-3/5 pr-4">
+        <CardHeader className="bg-gradient-to-r from-card via-card to-transparent pb-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/20">
               <Brain className="h-5 w-5 text-primary" />
             </div>
             <div>
               <CardTitle className="text-lg">AI Advisor</CardTitle>
               <CardDescription>Powered by Gemini AI</CardDescription>
             </div>
+            {analysis.confidence_level && (
+              <Badge className={cn('ml-auto', getConfidenceColor(analysis.confidence_level))}>
+                <Gauge className="mr-1 h-3 w-3" />
+                {analysis.confidence_level}
+              </Badge>
+            )}
           </div>
-          {analysis.confidence_level && (
-            <Badge className={cn(getConfidenceColor(analysis.confidence_level))}>
-              <Gauge className="mr-1 h-3 w-3" />
-              {analysis.confidence_level}
-            </Badge>
-          )}
-        </div>
-      </CardHeader>
-      <CardContent className="relative z-10 pt-6 space-y-6 backdrop-blur-sm bg-card/80">
+        </CardHeader>
+
+        <CardContent className="pt-4 space-y-6 bg-gradient-to-r from-card via-card/95 to-transparent">
         {/* Degradation Point */}
         {analysis.degradation_point && (
           <div className="space-y-2">
@@ -141,7 +141,8 @@ export function AIAnalysisCard({ analysis }: AIAnalysisCardProps) {
             )}
           </div>
         </div>
-      </CardContent>
+        </CardContent>
+      </div>
     </Card>
   );
 }
