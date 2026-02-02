@@ -1,31 +1,35 @@
-import { useState } from 'react';
+import { useState, Suspense, lazy } from 'react';
 import { AuthForm } from '@/components/auth/AuthForm';
-import { Sprout, Truck, Store, Leaf, Shield, Brain } from 'lucide-react';
+import { Sprout, Truck, Store, Leaf, Shield, Brain, Loader2 } from 'lucide-react';
 
-const SPLINE_EMBED_URL =
-  'https://my.spline.design/nexbotbyaximoriscopycopy-UM9H9JTgyCAde3Y2lbv8De3h/';
+const Spline = lazy(() => import('@splinetool/react-spline'));
+
+const SPLINE_SCENE_URL =
+  'https://prod.spline.design/UM9H9JTgyCAde3Y2lbv8De3h/scene.splinecode';
 
 export function AuthPage() {
   const [mode, setMode] = useState<'login' | 'signup'>('login');
+  const [isLoading, setIsLoading] = useState(true);
 
   return (
     <div className="min-h-screen relative overflow-hidden">
       {/* Spline 3D Background - fullscreen, centered, fully interactive */}
       <div className="absolute inset-0 z-0">
-        <iframe
-          title="Beyond the Farm 3D Background"
-          src={SPLINE_EMBED_URL}
-          className="h-full w-full border-0"
-          style={{
-            transform: 'translateZ(0)',
-            backfaceVisibility: 'hidden',
-            willChange: 'transform',
-            WebkitFontSmoothing: 'antialiased',
-          }}
-          allow="autoplay; fullscreen"
-          loading="eager"
-          referrerPolicy="no-referrer-when-downgrade"
-        />
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-background">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          </div>
+        )}
+        <Suspense fallback={null}>
+          <Spline
+            scene={SPLINE_SCENE_URL}
+            onLoad={() => setIsLoading(false)}
+            style={{
+              width: '100%',
+              height: '100%',
+            }}
+          />
+        </Suspense>
       </div>
 
       {/* Content overlay - pointer-events-none on container, enabled on interactive elements */}
